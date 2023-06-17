@@ -25,4 +25,6 @@ Route::middleware('auth:api')->group(function (){
     Route::post('/add-buy-sell',[UserController::class,'addBuySell']);
     Route::get('/get-currency',[UserController::class,'getCurrency']);
     Route::get('/get-currency',[UserController::class,'getCurrency']);
+    Route::post('/notification',[UserController::class,'notification']);
+
 });

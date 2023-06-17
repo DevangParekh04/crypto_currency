@@ -152,5 +152,71 @@ class UserController extends Controller
         }
 
     }
+    public function notification(Request $request)
+    {
+       $validator = Validator::make($request->all(), [
+            'type' => 'required',
+            'time' => 'required',
+            'start_price' => 'required',
+            'end_price' => 'required',
+        ]);
 
+        // If validation fails, return the error response
+        if ($validator->fails()) {
+            return response()->json([
+                'code' => 400,
+                'status' => 'false',
+                'message' => 'Validation Error',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+        $percentageDifference =((($request->start_price - $request->end_price) / $request->end_price) * 100);
+        $percentageDifference= number_format($percentageDifference,2);
+        if($percentageDifference>0){
+            $message = $request->type." went +".$percentageDifference."% 🔼 Up in just last ".$request->time." from ".$request->start_price ." to ". $request->end_price;
+        }
+        if($percentageDifference<0){
+            $message =  $request->type." went -".$percentageDifference."% 🔽  Down in just last ".$request->time." from ".$request->start_price ." to ". $request->end_price;
+        }
+        $title = '';
+        $img = "https://skdev.in/Earnito/upload/icon.png";
+        $external_link = false;
+        $content = array("en" => $message);
+        $fields = array(
+            'app_id' => config('app.ONESIGNAL.ONESIGNAL_ID'),
+            'included_segments' => array('All'),
+            'data' => array("is_announcement" => "0","external_link"=>$external_link),
+            'headings'=> array("en" => $title),
+            'contents' => $content,
+            'big_picture' =>$img
+        );
+        $fields = json_encode($fields);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, config('app.ONESIGNAL.ONESIGNAL_URL'));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json; charset=utf-8', 'Authorization: Basic '.config('app.ONESIGNAL.ONESIGNAL_KEY')));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_HEADER, FALSE);
+        curl_setopt($ch, CURLOPT_POST, TRUE);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+        $response = curl_exec($ch);
+        $result = json_decode($response);
+        curl_close($ch);
+
+        if($result){
+            return response()->json([
+                'code' => 200,
+                'status' => 'true',
+                'data' => $result,
+            ], 200);
+        }else{
+            return response()->json([
+                'code' => 423,
+                'status' => 'false',
+                'message' => 'Some thing is wrong',
+            ], 423);
+        }
+
+    }
 }

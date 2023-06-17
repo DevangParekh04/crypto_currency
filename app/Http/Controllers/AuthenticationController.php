@@ -54,8 +54,8 @@ class AuthenticationController extends Controller
     }
     public function login(Request $request)
     {
-         // Validate the request data
-         $validator = Validator::make($request->all(), [
+        // Validate the request data
+        $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required|min:8',
         ]);
@@ -137,7 +137,7 @@ class AuthenticationController extends Controller
             'data' => [],
         ], 200);
     }
-    
+
 
 }
 

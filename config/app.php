@@ -212,4 +212,10 @@ return [
         // 'ExampleClass' => App\Example\ExampleClass::class,
     ])->toArray(),
 
+    'ONESIGNAL' => [
+        'ONESIGNAL_URL' => env('ONESIGNAL_URL'),
+        'ONESIGNAL_KEY' => env('ONESIGNAL_KEY'),
+        'ONESIGNAL_ID' => env('ONESIGNAL_ID'),
+    ],
+
 ];
