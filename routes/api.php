@@ -18,13 +18,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login',[AuthenticationController::class,'login']);
 Route::post('/register',[AuthenticationController::class,'register']);
+Route::post('/send-otp',[AuthenticationController::class,'sendOtp']);
+Route::post('/verify-email',[AuthenticationController::class,'verifyEmail']);
+Route::post('/reset-password', [AuthenticationController::class, 'resetPassword']);
 Route::middleware('auth:api')->group(function (){
-    Route::post('/verify-email',[AuthenticationController::class,'verifyEmail']);
     Route::get('/get-user-holdings',[UserController::class,'getUserHolding']);
     Route::get('/get-user-transactions',[UserController::class,'getUserTransaction']);
     Route::post('/add-buy-sell',[UserController::class,'addBuySell']);
     Route::get('/get-currency',[UserController::class,'getCurrency']);
     Route::get('/get-currency',[UserController::class,'getCurrency']);
     Route::post('/notification',[UserController::class,'notification']);
+
 
 });

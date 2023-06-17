@@ -28,7 +28,6 @@ class EmailSend
             $body = $emailFormat->emailformat;
             $body = str_replace("%name%", $emailData['name'], $body);
             $body = str_replace("%otp%", $emailData['otp'], $body);
-
             Mail::to($emailData['email'])->queue(new Email($emailFormat->subject, $body));
             return true;
         } catch (Exception $exception) {

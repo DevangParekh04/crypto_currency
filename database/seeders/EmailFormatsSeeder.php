@@ -17,6 +17,8 @@ class EmailFormatsSeeder extends Seeder
     {
         $emailFormat = [
             'title' => 'Forget Password',
+            'subject'=>'Forget Password',
+            'slug'=>'forget-password',
             'variables' => '%name%,%otp%',
             'emailformat' => '<p>Hello %name%,<br>
                 <br>Your Crypto account email verification OTP is <strong>%otp%</strong>.

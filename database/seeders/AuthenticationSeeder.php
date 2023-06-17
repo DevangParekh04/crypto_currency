@@ -18,7 +18,7 @@ class AuthenticationSeeder extends Seeder
     {
         DB::table('users')->insert([
             'name'=>'Admin',
-            'email' => 'sagarkgohil123@gmail.com',
+            'email' => 'sagar@mailinator.com',
             'password' => Hash::make('12345678'),
         ]);
     }

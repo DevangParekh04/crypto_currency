@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserHolding;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthenticationController extends Controller
 {
@@ -91,10 +92,86 @@ class AuthenticationController extends Controller
             'token' => $token,
         ], 200);
     }
+    public function sendOtp(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+    ]);
+
+    // If validation fails, return the error response
+    if ($validator->fails()) {
+        return response()->json([
+            'code' => 400,
+            'status' => 'false',
+            'message' => 'Validation Error',
+            'errors' => $validator->errors(),
+        ], 400);
+    }
+
+    $email = $request->email;
+    $user = User::where('email', $email)->first();
+    if (!$user) {
+        return response()->json([
+            'code' => 400,
+            'status' => 'false',
+            'message' => 'Invalid Email',
+        ], 401);
+    }
+
+    // Generate OTP and set expiry time
+    $otp = mt_rand(100000, 999999);
+    $expiredAt = now()->addMinutes(5); // Expiry time set to 5 minutes from the current time
+    // Store OTP in the OTP table
+    $otpData = Otp::create([
+        'user_id' => $user->id,
+        'otp' => $otp,
+        'expired_at' => $expiredAt,
+    ]);
+
+    // Prepare data for the email
+    $emailData = [
+        'name' => $user->name,
+        'email' => $email,
+        'otp' => $otp,
+    ];
+
+    // Send email with user's name and OTP
+    $emailSend = new EmailSend();
+    $isSend = $emailSend->emailForgotPassword($emailData);
+    if ($isSend) {
+        return response()->json([
+            'code' => 200,
+            'status' => 'true',
+            'message' => 'OTP sent successfully',
+            'data' => [],
+        ], 200);
+    } else {
+        return response()->json([
+            'code' => 400,
+            'status' => 'false',
+            'message' => 'Something went wrong',
+        ], 401);
+    }
+}
+
     public function verifyEmail(Request $request)
     {
-            // Check if the email exists in the User table
-        $email=auth()->user()->email;
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'otp' => 'required|numeric',
+        ]);
+
+        // If validation fails, return the error response
+        if ($validator->fails()) {
+            return response()->json([
+                'code' => 400,
+                'status' => 'false',
+                'message' => 'Validation Error',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+
+        $email = $request->email;
         $user = User::where('email', $email)->first();
         if (!$user) {
             return response()->json([
@@ -104,40 +181,76 @@ class AuthenticationController extends Controller
             ], 401);
         }
 
-        // Generate OTP and set expiry time
-        $otp = mt_rand(100000, 999999);
-        $expiresAt = Carbon::now()->addMinutes(2);
+        $otpData = Otp::where('otp', $request->otp)->whereIsUsed(0)->first();
 
-        // Store OTP in the OTP table
-        $otpData = Otp::create([
-            'user_id' => $user->id,
-            'currency_id' => $request->currency_id,
-            'quanty' => $request->currency_id,
-            'avrage' => $request->currency_id,
-            'invested' => $request->currency_id,
+        if (!$otpData) {
+            return response()->json([
+                'code' => 400,
+                'status' => 'false',
+                'message' => 'Invalid OTP',
+            ], 401);
+        }
 
-
-        ]);
-
-        // Prepare data for the email
-        $emailData = [
-            'name' => $user->name,
-            'email' => $email,
-            'otp' => $otp,
-        ];
-
-        // Send email with user's name and OTP
-        $emailSend = new EmailSend();
-        $emailSend->emailForgotPassword($emailData);
-
+        // Check if OTP is expired
+        $currentTime = now();
+        $expiredAt = $otpData->expired_at;
+        if ($currentTime > $expiredAt) {
+            return response()->json([
+                'code' => 400,
+                'status' => 'false',
+                'message' => 'OTP has expired',
+            ], 401);
+        }
+        $otpData->is_used=1;
+        $otpData->save();
         return response()->json([
             'code' => 200,
             'status' => 'true',
-            'message' => 'OTP sent successfully',
-            'data' => [],
+            'message' => 'OTP verified successfully',
         ], 200);
     }
+    public function resetPassword(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+        'password' => 'required|min:6',
+    ]);
 
+    // If validation fails, return the error response
+    if ($validator->fails()) {
+        return response()->json([
+            'code' => 400,
+            'status' => 'false',
+            'message' => 'Validation Error',
+            'errors' => $validator->errors(),
+        ], 400);
+    }
+
+    $email = $request->email;
+    $password = $request->password;
+
+    // Find the user by email
+    $user = User::where('email', $email)->first();
+
+    if (!$user) {
+        return response()->json([
+            'code' => 400,
+            'status' => 'false',
+            'message' => 'Invalid Email',
+        ], 401);
+    }
+
+    // Update the user's password
+    $user->password = Hash::make($password);
+    $user->save();
+
+    return response()->json([
+        'code' => 200,
+        'status' => 'true',
+        'message' => 'Password updated successfully',
+        'data' => [],
+    ], 200);
+}
 
 }
 

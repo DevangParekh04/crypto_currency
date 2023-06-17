@@ -15,6 +15,8 @@ return new class extends Migration
         Schema::create('email_formats', function (Blueprint $table) {
             $table->id();
             $table->string('title');
+            $table->string('subject');
+            $table->string('slug');
             $table->string('variables');
             $table->string('emailformat');
             $table->timestamps();

@@ -17,8 +17,9 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users');
+            $table->boolean('is_used')->default(0);
             $table->string('otp');
-            $table->timestamp('expires_at');
+            $table->timestamp('expired_at');
             $table->timestamps();
         });
     }

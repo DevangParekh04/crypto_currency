@@ -12,6 +12,6 @@ class Otp extends Model
     protected $fillable = [
         'user_id',
         'otp',
-        'expires_at',
+        'expired_at',
     ];
 }
