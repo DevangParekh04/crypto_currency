@@ -63,13 +63,75 @@ class UserController extends Controller
         }
     }
 
-    public function addBuySell(Request $request)
+    public function addBuy(Request $request)
     {
         $user=$request->user();
         // Validate the request data
         $validator = Validator::make($request->all(), [
             'currency_id' => 'required',
-            'action' => 'required|in:0,1',
+            'buy_price' => 'required',
+            'quantity' => 'required',
+            'amount'=>'required',
+        ]);
+
+        // If validation fails, return the error response
+        if ($validator->fails()) {
+            return response()->json([
+                'code' => 400,
+                'status' => 'false',
+                'message' => 'Validation Error',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+
+        // Find the UserHolding record based on user_id and currency_id
+        $userHolding = UserHolding::where('user_id', $user->id)
+            ->where('currency_id', $request->currency_id)
+            ->first();
+
+        if ($userHolding) {
+                $userHolding->quantity += $request->quantity;
+
+            $userHolding->update([
+                'quantity'=>$request->quantity,
+                'average' => $request->average,
+                'invested' => $request->invested,
+            ]);
+        } else {
+            // Create a new UserHolding record
+            $userHolding = UserHolding::create([
+                'user_id' => $request->user_id,
+                'currency_id' => $request->currency_id,
+                'quantity' => $request->quantity,
+                'average' => $request->average,
+                'invested' => $request->invested,
+            ]);
+        }
+        TransactionCurrency::create([
+            'user_id' => $user->id,
+            'currency_id' => $request->currency_id,
+            'transaction_type' => 1,
+            'current_price' => $request->current_price,
+            'quantity' => $request->quantity,
+            'amount' => $request->amount,
+            'transaction_date' => now(),
+        ]);
+
+        // Return the success response
+        return response()->json([
+            'code' => 200,
+            'status' => 'true',
+            'message' => 'User Holding created or updated successfully',
+            'data' => [],
+        ], 200);
+    }
+
+    public function addSell(Request $request)
+    {
+        $user=$request->user();
+        // Validate the request data
+        $validator = Validator::make($request->all(), [
+            'currency_id' => 'required',
             'quantity' => 'required',
             'average' => 'required',
             'amount'=>'required',
@@ -157,8 +219,8 @@ class UserController extends Controller
        $validator = Validator::make($request->all(), [
             'type' => 'required',
             'time' => 'required',
-            'start_price' => 'required',
-            'end_price' => 'required',
+            'buy_price' => 'required',
+            'sell_price' => 'required',
         ]);
 
         // If validation fails, return the error response
@@ -170,16 +232,9 @@ class UserController extends Controller
                 'errors' => $validator->errors(),
             ], 400);
         }
-        $percentageDifference =((($request->start_price - $request->end_price) / $request->end_price) * 100);
-        $percentageDifference= number_format($percentageDifference,2);
-        if($percentageDifference>0){
-            $message = $request->type." went +".$percentageDifference."% 🔼 Up in just last ".$request->time." from ".$request->start_price ." to ". $request->end_price;
-        }
-        if($percentageDifference<0){
-            $message =  $request->type." went -".$percentageDifference."% 🔽  Down in just last ".$request->time." from ".$request->start_price ." to ". $request->end_price;
-        }
+        $message = $this->calculatePercentageDifference($request->buy_price,$request->sell_price,$request->time,$request->type);
         $title = '';
-        $img = "https://skdev.in/Earnito/upload/icon.png";
+        $img = "";
         $external_link = false;
         $content = array("en" => $message);
         $fields = array(
@@ -217,6 +272,17 @@ class UserController extends Controller
                 'message' => 'Some thing is wrong',
             ], 423);
         }
-
+    }
+    function calculatePercentageDifference($buy_price,$sell_price,$time,$type){
+        $percentageDifference =((($sell_price - $buy_price) / $buy_price) * 100);
+        $percentageDifference= round($percentageDifference,2);
+        if($percentageDifference>0){
+            $message = $type." went + ".$percentageDifference."% 🔼 Up in just last ".$time." from ".$buy_price ." to ". $sell_price;
+            return $message;
+        }
+        if($percentageDifference<0){
+            $message =  $type." went ".$percentageDifference."% 🔽  Down in just last ".$time." from ".$buy_price ." to ". $sell_price;
+            return $message;
+        }
     }
 }

@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\EmailSend;
+use App\Models\CryptoCurrency;
 use App\Models\Otp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\UserHolding;
 use Carbon\Carbon;
+use Exception;
+use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
@@ -252,5 +255,41 @@ class AuthenticationController extends Controller
     ], 200);
 }
 
+    function getCriptoCurrency()
+    {
+        // for($i=1;$i<40;$i++){
+
+            $url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=42&sparkline=false';
+            $allData = [];
+
+            $client = new Client();
+            $fullUrl = $url;
+
+            try {
+                $response = $client->get($fullUrl);
+                $data = json_decode($response->getBody(), true);
+                // Append the data from the current page to the overall data array
+                $allData = array_merge($allData, $data);
+
+            } catch (Exception $e) {
+                // Handle any errors that occurred during the API call
+                // For example, log the error or return an error response
+                return ['error' => 'An error occurred while fetching data from the API: ' . $e->getMessage()];
+            }
+            foreach($allData as $data){
+                $CryptoCurrency = [
+                    'currency_name'=>$data['name'],
+                    'currency_code'=>$data['symbol'],
+                    'currency_image'=>$data['image'],
+                ];
+                CryptoCurrency::create($CryptoCurrency);
+            }
+        // }
+        // You can process the data as needed, e.g., return it or store it in the database
+        return response()->json([
+            'code' => 200,
+            'status' => 'true',
+        ], 200);
+    }
 }
 
